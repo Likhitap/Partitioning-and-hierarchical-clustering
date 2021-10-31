@@ -5,14 +5,14 @@ Elbow method, silhouette plot & gap statistics are used to find the best K value
 K-means(), clara(), fanny() & pam() partitioning algorithms were used to obtain the ideal number of clusters.
 
 <u>Final Thoughts on Partitioning Algorithm </u> <br>
-below are the key observations from partitioning algorithm:
+below are the key observations from partitioning algorithm: <br>
 • The best value for number of clusters (K) is 3 which is seen from the plots created using elbow method,
 Silhouette calculations and gap statistics. <br>
 • The best model for partitioning algorithm is given by kmeans() as the clusters are well separated from
 each other. <br>
 
 <u>Final Thoughts on Hierarchical Clustering Algorithm </u> <br>
-For Hierarchical clustering, below are the two best models:
+For Hierarchical clustering, below are the two best models: <br>
 • The hierarchical model build using “single” linkage method and distance metric created by “manhattan”
 method is having low (around 0.548) clustering coefficient which suggest this model to be good for
 outlier detection. Thus I would suggests that this as a best model for outlier detection.(As this is
