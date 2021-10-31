@@ -1,0 +1,544 @@
+---
+title: "Partitioning & Hierarchical Clustering"
+author: "Likhita Pula"
+date: "6/4/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### <u> Importing data for analysis </u>
+
+
+For the first assignment on Partitioning and hierarchical clustering I have choosen a dataset that describes various attributes of wine. This dataset is hosted on www.kaggle.com.
+
+```{r}
+wine_data <- read.delim("C:\\Users\\likhi\\Desktop\\MSDA\\Data Mining 2\\Dataset\\wine-clustering.csv", 
+                        header = TRUE,
+                        sep=",")
+```
+
+#### <u> Exploratory data analysis </u>
+
+
+As a next step, we can look at the overview and statistical details of the dataset used.
+
+Below we can see the top 6 rows of the data set
+
+```{r}
+head(wine_data)
+```
+
+Checking if the data set has any missing values:
+
+```{r}
+sum(is.na(wine_data))
+```
+We can see that there are no null values in the data.
+
+**The wine dataset had below features:** 
+
+* Alcohol
+* Malic acid
+* Ash
+* Alcalinity of ash
+* Magnesium
+* Total phenols
+* Flavanoids
+* Nonflavanoid phenols
+* Proanthocyanins
+* Color intensity
+* Hue
+* OD280 of diluted wines
+* Proline
+
+**Checking the dimension of the dataset:**
+
+```{r}
+dim(wine_data)
+```
+
+we can see that there are a total of 178  rows and  13 columns (features) in the wine dataset.
+
+**Checking the statistical attributes like maximum, minimum, mean etc. of the dataset features.**
+
+```{r}
+summary(wine_data)
+```
+
+We can see that few attributes like "proline" or "Magnesium" have larger values compared to other attributes
+
+These attributes / features with larger variance can substantially influence output clusters, thus it would be good to scale our dataset.
+
+#### <u> scaling the data for analysis </u>
+
+
+```{r}
+scale_M <- scale(
+  x = wine_data
+)
+```
+
+### <font color ="blue"> Partitioning Clustering </font>
+
+
+#### <u> Finding the optimal number of clusters </u>
+
+
+**We can use the Elbow method (sum of squares) method to find the optimal number of clusters:**
+
+```{r}
+set.seed(813)
+factoextra::fviz_nbclust(
+  x = scale_M,
+  FUNcluster = kmeans,
+  method = "wss"
+)
+```
+
+We can see the elbow points at 2 & 3. So, probably K = 3 or 2 would be giving us ideal clusters. Further we can observe the silhouette plot to find the best k value.
+
+**To find the optimal number of clusters we can examine the silhouette plot below:**
+
+```{r}
+set.seed(813)
+factoextra::fviz_nbclust(
+  x = scale_M,
+  FUNcluster = kmeans,
+  method = "silhouette"
+)
+```
+
+From the silhouette plot we can say that we can get ideal number of clusters when K=3.
+
+**Finding the optimal K (number of clusters) value using gap statistics:**
+
+```{r}
+set.seed(813)
+clusGap_kmeans <- cluster::clusGap(
+  x = scale_M,
+  FUNcluster = kmeans,
+  K.max = 10
+)
+
+factoextra::fviz_gap_stat(
+  gap_stat = clusGap_kmeans,
+)
+
+```
+
+From the gap statistics we can see that the optimal value of K is 3.
+
+
+**k-means clustering**
+
+k-means clustering aims to partition the points into k groups such that the sum of squares from points to the assigned cluster centers is minimized. It takes number of groups, or initial group centers, then labels observations into groups that are close to common group centers. Then recalculates the centers and repeats.
+
+```{r}
+kmeans_M1 <- kmeans(
+  x = scale_M,
+  centers = 3
+)
+kmeans_M1
+```
+
+
+When we observe the kmeans clustering vector, we can clearly see that the dataset has been well clustered into three groups and the cluster means of each feature tell that all features are substantially influencing the output clusters (due to scaling).
+
+```{r}
+cluster::clusplot(
+  scale_M,
+  kmeans_M1$cluster,
+  color=TRUE,
+  shade=FALSE,
+  lines=0
+)
+```
+
+The clusters formed using kmeans() look almost perfect. The dataset is well divided into 3 clusters in the custplot of kmeans.
+
+**Partitioning using Clara method**
+
+The cluster::clara() function is a good partitioning method for large data when robustness is not needed.
+
+```{r}
+clara_M <- cluster::clara(
+  x = scale_M,
+  k = 3
+)
+plot(clara_M)
+
+```
+
+When we look at the clustplot obtained from clara, we can see that there are 3 clusters created and the clusters created look good as the boundaries of these clusters are able to partition the clusters well.
+
+But there is a slight overlap between two of the clusters which appears to be more than the overlap that is observed in clusters made from kmeans.
+
+
+Results:
+
+```{r}
+print(clara_M)
+```
+
+
+**Partitioning using fanny method**
+
+The cluster::fanny() function gives a likelihood of a point belonging to a cluster.
+
+```{r}
+fanny_M <- cluster::fanny(
+  x = scale_M,
+  k = 3
+)
+
+plot(fanny_M)
+```
+
+When we observe the clustplot created by fanny method, we can see that the two clusters formed are overlapping each other.However the silhouette plot looks good here suggesting that the two clusters are almost perfect. But looking at the overall picture we can say that clusters created by clara & kmeans look more promising than the clusters created using fanny.
+
+Results:
+
+```{r}
+print(fanny_M)
+```
+
+
+**Partitioning using pam method**
+
+
+The cluster::pam() algorithm is the robust version of k-means. It uses medoids, and centers are observations in the data set.
+
+```{r}
+pam_M <- cluster::pam(
+  x = scale_M,
+  k = 3
+)
+plot(pam_M)
+```
+
+We can see that there is significant overlap between the clusters formed by pam(). Kmeans, clara & fanny are giving better results compared to pam().
+
+Results:
+
+```{r}
+print(pam_M)
+```
+
+#### <u> Final Thoughts on Partitioning Algorithm </u>
+
+
+below are the key observations from partitioning algorithm:
+
+* The best value for number of clusters (K) is 3 which is seen from the plots created using elbow method, Silhouette calculations and gap statistics.
+
+* The best model for partitioning algorithm is given by kmeans() as the clusters are well separated from each other.
+
+### <font color ="blue"> Hierarchical Clustering </font>
+
+
+**sample of distance matrix:**
+
+```{r}
+dist(
+  x = scale_M[1:5,]
+)
+```
+
+creating the distance matrix for hierarchical clustering:
+
+```{r}
+dist_M <- dist(
+  x = scale_M
+)
+```
+
+Now that we have created our distance matrix, we can plot the qgraph that would show association between rows based on thickness of the lines.
+
+```{r}
+library("qgraph")
+qgraph::qgraph(
+  input = 1/dist_M,
+  layout="spring",
+  minimum = 0.3
+)
+```
+
+From the plot it looks like the dataset can be clustered into 3 groups. Further we can use hclust() function to execute agglomerative clustering which is joining the two most similar clusters and continuing until there is just a single cluster.
+
+```{r}
+hclust_M <- hclust(
+  d = dist_M,
+  method = "complete"
+)
+plot(
+  x = hclust_M
+)
+```
+
+The above dendogram shows a complete linkage method where we can see that if we cut this dendogram at a height of 8.8 (approx) we might get 3 clusters that are splitting the data into (approximately) equal sized clusters.
+
+Lets cut the complete linkage tree so that we are able to get 3 clusters.
+
+```{r}
+cutree_hclust_M <- cutree(
+  tree = hclust_M,
+  k = 3
+)
+```
+
+Plotting the clusters created by hierarchical clustering using complete linkage method:
+
+```{r}
+require(ggplot2)
+prcomp_M <- data.frame(
+  prcomp(
+    x = scale_M,
+    center = FALSE,
+    scale. = FALSE
+  )$x[,1:2],
+  Cluster = as.character(cutree_hclust_M),
+  stringsAsFactors = FALSE
+)
+```
+
+```{r}
+ggplot(prcomp_M) + 
+  aes(x = PC1,y = PC2,color = Cluster,fill = Cluster,group = Cluster) + 
+  geom_point() + 
+  ggtitle("Complete Linkage Clustering","Color corresponds to Hierarchical clusters") + 
+  theme_bw() + 
+  theme(legend.position = "none")
+```
+
+Finding the coefficient of a hierarchical clustering using complete linkage method:
+
+```{r}
+cluster::coef.hclust(hclust_M) 
+```
+coefficient of 0.815 for hierarchical clustering using complete linkage method suggests that the hierarchical clustering is doing a better job of creating clusters with approximately equal number of observations. This is something we see from the cluster plot created earlier as well.
+
+
+Further we can check the dendogram for average linkage method:
+
+```{r}
+hclust_average_M <- hclust(
+  d = dist_M,
+  method = "average"
+)
+plot(
+  x = hclust_average_M
+)
+```
+
+From the average linkage dendogram we can see that record 60 appears on a different branch of the tree. This could be a outlier in the wine data set.
+
+Finding the coefficient of a hierarchical clustering using average linkage method:
+
+```{r}
+cluster::coef.hclust(hclust_average_M) 
+```
+This coefficient helps us to detect outliers in our dataset but we can further check hierarchical clustering using single linkage.
+
+Checking dendogram for hierarchical clustering using single linkage method:
+
+```{r}
+hclust_single_M <- hclust(
+  d = dist_M,
+  method = "single"
+)
+plot(
+  x = hclust_single_M
+)
+```
+Finding the coefficient of a hierarchical clustering using single linkage method:
+
+```{r}
+cluster::coef.hclust(hclust_single_M) 
+```
+We can see the coefficient for hierarchical clustering using single linkage is low (around 0.53) which indicates that this model is better for outlier detection.
+
+#### <u> Analysis of hierarchical clustering parameters </u>
+
+
+To check the best hierarchical model for outlier detection and partitioning data into (approximately) equal sized groups I have created dendograms for different combinations of distance metric and methods of hierarchical clustering. (Which are key parameters of hierarchical clustering)
+
+First, I am creating distance metric using "canberra","manhattan","euclidean","maximum" and "minkowski" method and similarly defining different hierarchical clustering methods like   "ward.D","ward.D2","complete","mcquitty","average" and "single" linkage in v_hclust.
+
+```{r}
+v_dist <- c(
+  "canberra","manhattan","euclidean","maximum","minkowski"
+)
+list_dist <- lapply(
+  X = v_dist,
+  FUN = function(distance_method) dist(
+    x = scale_M,
+    method = distance_method
+  )
+)
+names(list_dist) <- v_dist
+v_hclust <- c(
+  "ward.D","ward.D2","complete","mcquitty","average","single"
+)
+```
+
+Below are different dendograms for hierarchical clustering models having different clustering methods and distance metrics:
+
+```{r}
+list_hclust <- list()
+for(j in v_dist) for(k in v_hclust) list_hclust[[j]][[k]] <- hclust(
+  d = list_dist[[j]],
+  method = k
+)
+par(
+  mfrow = c(length(v_dist),length(v_hclust)),
+  mar = c(0,0,0,0),
+  mai = c(0,0,0,0),
+  oma = c(0,0,0,0)
+)
+for(j in v_dist) for(k in v_hclust) plot(
+  x = list_hclust[[j]][[k]],
+  labels = FALSE,
+  axes = FALSE,
+  main = paste("\n",j,"\n",k)
+)
+```
+
+For comparison, the heights of these dendograms should be on same scale. Thus the heights of the dendograms are adjusted so that best two models can be chosen.
+
+```{r}
+
+for(j in v_dist) for(k in v_hclust) list_hclust[[j]][[k]]$height <- rank(list_hclust[[j]][[k]]$height)
+par(
+  mfrow = c(length(v_dist),length(v_hclust)),
+  mar = c(0,0,0,0),
+  mai = c(0,0,0,0),
+  oma = c(0,0,0,0)
+)
+for(j in v_dist) for(k in v_hclust) plot(
+  x = list_hclust[[j]][[k]],
+  labels = FALSE,
+  axes = FALSE,
+  main = paste("\n",j,"\n",k)
+)
+
+```
+
+
+Based on the above matrix of dendogram plots building a model that would be good for outlier detection:
+
+```{r}
+plot(
+  x = list_hclust[["manhattan"]][["single"]],
+  main = "Manhattan Single Linkage",
+  sub = ""
+)
+```
+
+From the dendogram created using manhattan single linkage hierarchical model, we can say that rows 159 & 160 are appearding distinct from the rest of the tree brances but are highly associated to eachother. these can be potential outliers that need to be further investigated. Same is the case with observations in row 64 & 99.
+
+
+Finding the clustering coefficient of this model:
+
+```{r}
+cluster::coef.hclust(list_hclust[["manhattan"]][["single"]])
+
+```
+The clustering coefficient for the hierarchical clustering model using "single" linkage method and distance metric created by "manhattan" method is low (around 0.548) which suggest this model to be good for outlier detection.
+
+
+Based on the above matrix of dendogram plots building a model that would be good for partitioning data into equal sized groups:
+
+```{r}
+plot(
+  x = list_hclust[["canberra"]][["ward.D"]],
+  main = "Canberra Ward'D",
+  sub = ""
+)
+```
+
+From the above dendogram we can say that this model is able to partition the data into equal sized groups.
+
+Finding the clustering coefficient of this model:
+
+```{r}
+cluster::coef.hclust(list_hclust[["canberra"]][["ward.D"]])
+```
+The clustering coefficient for the hierarchical clustering model using "ward.D" method and distance metric created by "canberra" method is high (around 0.701) which suggest this model to be good for partitioning the data into equal sized groups.
+
+
+**Hierarchical clustering using agnes() method**
+
+
+```{r}
+agnes_M <- cluster::agnes(scale_M)
+plot(agnes_M)
+```
+
+From the dendogram created by agnes() function we see that few of the records appear differently in the tree. the record of row 60 looks like an outlier in this dataset.
+
+Thus we can say that agnes() function which uses agglomerative nesting algorithm for clustering is enabling us to detect outliers in the dataset.
+
+
+**Hierarchical clustering using diana() method**
+
+```{r}
+diana_M <- cluster::diana(scale_M)
+plot(diana_M)
+```
+
+From the dendogram created using Diana() function, we can say that the tree appears to be well partitioned. If we would cut the tree at a height between 8.7 to 8.9 (approx) we can get almost evenly partitioned clusters.
+
+Even the coefficient of clustering for the hierarchical model created using diana() is around 0.8 which suggests that well partitioned clusters can be formed of the dataset.
+
+**Hierarchical clustering using mona() method**
+
+To use mona() function there is need to convert data into binary format.
+
+```{r}
+binary_M <- scale_M
+for(j in 1:ncol(binary_M)) binary_M[,j] <- as.numeric(
+  binary_M[,j] > median(binary_M[,j])
+)
+```
+
+Now, as values of all variables are converted into 0's and 1's, monothetic analysis clustering of binary variables can be done (mona).
+
+```{r}
+mona_M <- cluster::mona(binary_M)
+print(mona_M)
+
+plot(mona_M)
+
+```
+
+
+In mona(), each division is based on a single (well-chosen) variable unlike other hierarchical methods like agnes & hclust. But the original dataset used is not in binary format, thus results of this model would be biased.
+
+#### <u> Final Thoughts on Hierarchical Clustering Algorithm </u>
+
+
+For Hierarchical clustering, below are the two best models:
+
+* The hierarchical model build using "single" linkage method and distance metric created by "manhattan" method is having low (around 0.548) clustering coefficient which suggest this model to be good for outlier detection. Thus I would suggests that this as a best model for outlier detection.(As this is based on a comparative scale)
+
+* The hierarchical model build using "ward.D" clustering method and distance metric created by "canberra" method is having high (around 0.701) clustering coefficient which suggests that this model to be good for partitioning the data into equal sized groups.(As this is based on a comparative scale). Thus I consider this to be my best model for partitioning the data into equal sized groups.
+
+**Some Interesting observations**
+
+
+* Models built by agnes() and hclust() with average linkage show that row number 60 is distinct from all other observations suggesting it to be an outlier in the data. However since the dendograms of these models are not in the same height scale these are not chosen as final models.
+
+* Model built using diana() has a clustering coefficient of 0.8 suggesting a good partition of data. By observing the dendogram created by diana() we can say that the data can be clustered into a equal sized group of 3-4.
+
+
+
+
+
